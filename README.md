@@ -38,8 +38,6 @@ To run the script, use the following command:
 
 ## Prerequisites
 
-- This script is designed for Debian 12 x86_64.
-
 - Ensure that pigz and tar are installed on your system.
 
 ## Contributing
