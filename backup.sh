@@ -317,7 +317,10 @@ archive(){
   
     created=1
     for file in * ;do
-        
+        if [ $file == "*" ]; then
+            create_tar || return $?
+            break
+        fi
         local tar_res="`tar tf $file | sort | uniq`"
         convert_to_arrayln "$tar_res"
         local tar_list=("${list[@]}")
@@ -329,7 +332,6 @@ archive(){
             if [ $created -eq 1 ]; then
                 create_tar || return $?
                 created=0
-            else
             fi
             if [[ "`basename $file`" != "`basename $backup_file`" ]]; then
                 rm $file || return $?
