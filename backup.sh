@@ -9,12 +9,12 @@ abs_dirs_list=()
 dirs_list=()
 list=()
 
-# ✓
+
 show_help(){
     echo "Usage: $0 <directories/files to backup (use absolute path, and seperate by space)> -d <backup destination directory> "
 }
 
-# ✓
+
 print_file(){
     if [ -f $1 ]; then
         echo $1
@@ -23,7 +23,7 @@ print_file(){
     fi
 }
 
-# ✓
+
 print_dir(){
     if [ -d $1 ]; then
         echo $1
@@ -32,12 +32,12 @@ print_dir(){
     fi
 }
 
-# ✓
+
 get_time(){
     /usr/bin/date +%d-%m-%Y-%H-%M
 }
 
-# ✓
+
 add(){
     if [ "$#" -lt 1 ]; then
         {>&2 echo "Error : Few arguments to add() function."; return 2;}
@@ -58,7 +58,7 @@ add(){
 }
 
 
-# ✓
+
 compare_arrays() {
     # Takes two arrays as arguments
     # Returns 0 if two arrays are equal, and returns 1 if array2
@@ -126,7 +126,7 @@ compare_arrays() {
         return 4
     fi
 }
-# ✓
+
 extract_names(){
     # takes directory name and prints all file/subdir names inside 
     # stores the output into list, using convert_to_array
@@ -155,7 +155,7 @@ extract_names(){
     fi
     return $status_code
 }
-# ✓
+
 convert_to_array() {
     # Converts strings to array, elements are separated by separator
     # Stores the output in the global array $list
@@ -222,7 +222,7 @@ append_fs(){
     done
 }
 
-# ✓
+
 convert_to_arrayln() {
     # Converts strings to array, each line is a element
     # Stores the output in the global array $list
@@ -252,7 +252,7 @@ convert_to_arrayln() {
 }
 
 
-# ✓
+
 create_directory() {
             
     if [ "$#" -lt 1 ]; then
@@ -271,7 +271,7 @@ create_directory() {
 
 }
 
-# ✓
+
 getdirs() {
     array_length=${#dirs_list[@]}
     for ((i=0; i<array_length; i++)); do
@@ -283,14 +283,14 @@ getdirs() {
     echo  # Add a newline at the end
 }
 
-# ✓
+
 create_tar(){
     /usr/bin/tar fc $backup_file --use-compress-program=pigz $tar_arguments $dirs  
     return $?
 }
 
 
-# ✓
+
 archive(){
     
     if [ $# -lt 2 ]; then
@@ -345,7 +345,7 @@ archive(){
 
 
 
-# ✓
+
 if [ $# -lt 1 ]; then
     show_help; exit 1
 fi
