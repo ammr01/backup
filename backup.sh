@@ -58,70 +58,63 @@ add(){
 }
 
 
-
-compare_arrays() {
+compare_arrays() { 
+    # Time Complexity: O(2n+2m), where n is array1 len, and m is array2 len
     # Takes two arrays as arguments
     # Returns 0 if two arrays are equal, and returns 1 if array2
     # is a subset of array1, and returns 2 if array1 is a subset
     # of array2, and returns 3 if arrays are not a subset of each other
-
     if [ "$#" -ne 2 ]; then
         echo "Error: Invalid argument number to compare_arrays() function!" >&2
         return 5
     fi
 
-    local array1=("${!1}")
-    local array2=("${!2}")
+    declare -A hash_table1
+    declare -A hash_table2
 
-    if [ ${#array1[@]} -eq  0 ] && [ ${#array2[@]} -eq  0 ]; then
-        return 0;
-    elif [ ${#array1[@]} -ne  0 ] && [ ${#array2[@]} -eq  0 ]; then
-        return 1;
-    elif [ ${#array1[@]} -eq  0 ] && [ ${#array2[@]} -ne  0 ]; then
-        return 2;
-    fi
-    local fsubs=true  # first is a subset of second
-    local ssubf=true  # second is a subset of first
-
-    for array1_element in "${array1[@]}"; do
-    local count=0
-        for array2_element in "${array2[@]}"; do
-            ((count++))
-            if [ "$array2_element" == "$array1_element" ]; then
-                echo " ==="
-                break
-            elif [ "$array2_element" != "$array1_element" ] && [ $count -eq ${#array2[@]} ]; then
-                fsubs=false
-            fi
-            echo ""
-        done
+    local array1=("${!1}") 
+    local array2=("${!2}")  
+    for element in "${array1[@]}"; do
+        if [ ! -z "$element" ] ; then
+            hash_table1["$element"]=1 
+        fi
+    done
+    for element in "${array2[@]}"; do
+        if [ ! -z "$element" ] ; then
+            hash_table2["$element"]=1 
+        fi
     done
 
-    for array2_element in "${array2[@]}"; do
-        count=0
-        for array1_element in "${array1[@]}"; do
-            ((count++))
-            if [ "$array1_element" == "$array2_element" ]; then
-                echo " ==="
-                break
-            elif [ "$array1_element" != "$array2_element" ] && [ $count -eq ${#array1[@]} ] ; then
+    local fsubs=true
+    local ssubf=true
+
+    for element in "${array2[@]}"; do #1 2 3 
+        if [ ! -z "$element" ] ; then
+            if [ -z "${hash_table1[$element]}" ]; then # potential reason
                 ssubf=false
+                break
             fi
-            echo ""
-
-        done
+        fi
     done
 
-       
+    for element in "${array1[@]}"; do
+        if [ ! -z "$element" ] ; then
+            if [ -z "${hash_table2[$element]}" ]; then # potential reason
+                fsubs=false
+                break
+            fi
+        fi
+    done
+
 
     if [ "$fsubs" = true ] && [ "$ssubf" = true ]; then
-        return 0
+        return 0 # first equals the second
     elif [ "$fsubs" = false ] && [ "$ssubf" = true ]; then
-        return 1
+        return 1 # second is a subset of first
     elif [ "$fsubs" = true ] && [ "$ssubf" = false ]; then
-        return 2
+        return 2 # first is a subset of second
     elif [ "$fsubs" = false ] && [ "$ssubf" = false ]; then
-        return 3
+        return 3 # first and second are not equal or subset
     else
         return 4
     fi
@@ -139,6 +132,7 @@ extract_names(){
         return 2
     fi
     local array=("${!1}")
+    echo "" > /tmp/backup.tmp
     for i in "${array[@]}";do
         find $i -type d,f >> /tmp/backup.tmp ## replace $1 with a list
     done
@@ -148,7 +142,7 @@ extract_names(){
     elif [ $status_code -eq 0 ]; then
      local output="`sort /tmp/backup.tmp | uniq`"
         rm /tmp/backup.tmp
-        convert_to_arrayln "$output"
+        convert_to_arrayln "$output" || return $?
         remove_fs list[@]
         append_fs list[@]
         return $status_code
@@ -167,20 +161,20 @@ convert_to_array() {
         return 2
     fi
 
+
     local input="$1"
     local separator="$2"
+    
     list=()
     if [ "${#separator}" -ne 1 ]; then
         echo "Error: Separator must be a single character." >&2
         return 1
     fi
-
     
     if [ -z "$input" ]; then
         echo "Error: Input string is empty." >&2
-        return 3
+        return 9 
     fi
-
     
     field_count=$(echo "$input" | awk -F"$separator" '{print NF}')
     for ((i = 1; i <= field_count; i++)); do
@@ -202,6 +196,7 @@ remove_fs(){
         list+=( "${i#/}" )
     done
 }
+
 append_fs(){
     # takes list and append forward slash (/) (fs), 
     # to elements that is a valid directory
@@ -211,7 +206,7 @@ append_fs(){
     fi
     local array=("${!1}")
     list=()
-    for i in ${array[@]};do
+    for i in "${array[@]}";do
         local d="${i#/}"
         local d="/$d"
         if [ -d "$d" ]; then
@@ -221,7 +216,6 @@ append_fs(){
         fi
     done
 }
-
 
 convert_to_arrayln() {
     # Converts strings to array, each line is a element
@@ -251,8 +245,6 @@ convert_to_arrayln() {
     return 0
 }
 
-
-
 create_directory() {
             
     if [ "$#" -lt 1 ]; then
@@ -261,7 +253,6 @@ create_directory() {
         {>&2 echo "Error : Many arguments to create_directory() function."; return 2;}    
     fi
     directory=$1
-    #try to create or open the Directory
     if [ -d "$directory" ]; then
         cd "$directory" || {>&2 echo "Error : Cannot change to directory : $directory"; return 1;}
     else
@@ -270,7 +261,6 @@ create_directory() {
     fi
 
 }
-
 
 getdirs() {
     array_length=${#dirs_list[@]}
@@ -283,13 +273,71 @@ getdirs() {
     echo  # Add a newline at the end
 }
 
-
 create_tar(){
-    /usr/bin/tar fc $backup_file --use-compress-program=pigz $tar_arguments $dirs  
+    if [ $# -ne 1 ]; then
+        echo "Error: Invalid arguments number to create_tar() function!" >&2 ; return 1
+    fi
+    
+    if [ -z $1 ]; then
+        echo "Error: Input String is empty!" >&2 ; return 1
+    fi
+    
+    /usr/bin/tar fc $backup_file --use-compress-program=pigz $tar_arguments ${abs_dirs_list[@]}  
     return $?
 }
 
 
+compare_names(){
+    
+    if [ $# -lt 2 ]; then
+        echo "Error: Few arguments to compare_names() function!" >&2 ; return 1
+    fi
+
+    local file="$1"
+    shift
+    local backup_file="$1"
+    shift
+
+
+    local extracted_dirs=${backup_file%]*]*}
+    extracted_dirs=${extracted_dirs#*[}
+
+    
+    convert_to_array "$extracted_dirs" "-" || return $?
+
+    local extracted_dir_list=("${list[@]}")
+
+    compare_arrays dirs_list[@]  extracted_dir_list[@]
+    local result=$?
+    return $result
+    
+}
+
+
+compare_content(){
+    
+    if [ $# -lt 2 ]; then
+        echo "Error: Few arguments to compare_content() function!" >&2 ; return 1
+    fi
+
+    local file="$1"
+    shift
+    local backup_file="$1"
+    shift
+
+    local tar_res="`tar tf $file | sort | uniq`"
+    convert_to_arrayln "$tar_res" || return $?
+    local tar_list=("${list[@]}")
+    
+    extract_names abs_dirs_list[@] || return $?
+    local extracted_dirs_list=("${list[@]}")
+    
+    
+    compare_arrays tar_list[@]  extracted_dirs_list[@]
+    local result=$?
+    return $result
+    
+}
 
 archive(){
     
@@ -304,46 +352,49 @@ archive(){
     
     create_directory $backup_dir || return $?
     # backup_file="$backup_dir/backup[`getdirs`][`/usr/bin/date +%d-%m-%Y-%H-%M``].tar.gz"
+    
     local backup_file="$backup_dir/backup[`getdirs`][`get_time`].tar.gz"
-                                  #^^^compare^ ^ignore_compare^
-    
-    local dirs=""
-
-    for arg in $@; do
-        dirs=" $dirs`print_dir $arg` "   
-    done
-    
-    ## check for *[file1-file2]* tar file
-  
+                                  #^^^compare^ ^ignore_compare^    
+    local backup_file_name="`basename $backup_file`"
     created=1
+
     for file in * ;do
+        
         if [ $file == "*" ]; then
-            create_tar || return $?
+            create_tar $backup_file || return $?
             break
         fi
-        local tar_res="`tar tf $file | sort | uniq`"
-        convert_to_arrayln "$tar_res"
-        local tar_list=("${list[@]}")
-        extract_names abs_dirs_list[@] || return $?
-        extracted_dirs_list=("${list[@]}")
-        compare_arrays tar_list[@]  extracted_dirs_list[@]
-        result=$?
+        
+        local result=99
+        
+        if [ $compare_names -eq 0 ]; then
+            compare_names $file $backup_file_name
+            result=$?
+        else
+            compare_content $file $backup_file_name
+            result=$?
+        fi
+
+
         if [ $result -eq 0 ] || [ $result -eq 2 ]; then
             if [ $created -eq 1 ]; then
-                create_tar || return $?
+                create_tar $backup_file || return $?
                 created=0
             fi
+              
             if [[ "`basename $file`" != "`basename $backup_file`" ]]; then
                 rm $file || return $?
             fi
         else            
-            create_tar  || return $?
+            if [ $created -eq 1 ]; then
+                create_tar $backup_file  || return $?
+                created=0
+            fi
         fi
     done   
 
 }
-
-
+compare_names=1
 
 
 if [ $# -lt 1 ]; then
@@ -376,6 +427,13 @@ while [ $# -gt 0 ]; do
             exit 1
         fi
     ;;
+    
+    -n|--compare_names)  
+        compare_names=0
+        compare_content=1
+        shift 
+    ;;
+    
     *)
         add $1 || exit $?
         shift
@@ -383,12 +441,6 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-
-
-
 archive "$destination" "$tar_arguments" ${abs_dirs_list[@]} || exit $?
 
-
 echo "archived successfully!"
-
-
