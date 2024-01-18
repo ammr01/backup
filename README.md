@@ -17,6 +17,7 @@ To run the script, use the following command:
 - `<directories/files>`: Specify the directories or files to be backed up using their absolute paths, separated by space.
 - `-d` or `--destination`: Specify the backup destination directory.
 - `--tar_arguments`: Specify additional arguments to be passed to the `tar` command during backup.
+- `-n` or `--compare_names`: compare file names instead of tar files content in the destination directory.
 
 ### Example
 
